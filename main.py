@@ -53,11 +53,59 @@ class CellComboBox(QtWidgets.QComboBox):
         self.valueChanged.emit(self.row, self.column, value)
 
 
+# Свой класс счётчика, чтобы была возможность получать сигналы,
+# что этот объект больше не в фокусе
+class MySpinBox(QtWidgets.QSpinBox):
+    # этот сигнал необходим в случае, если
+    # пользователь ввёл данные с клавиатуры, но не нажал Enter,
+    # тогда необходимо вернуть значения в счётчике на изначальное
+    focusOut = pyqtSignal()
+
+    def __init__(self, minValue=0, maxValue=99):
+        super(MySpinBox, self).__init__()
+        self.setMinimum(minValue)
+        self.setMaximum(maxValue)
+        # При ручном изменении количества строк срабатывает сигнал valueChanged,
+        # например, если значение изначально было 20, при вводе с клавиатуры 10, сначала
+        # отправится сигнал со значением 1, потом только со значением 10. После того как
+        # ввели 10 и нажать Enter, сигнал отправится ещё раз со значением 10.
+        # В обработчике сигнала будет проверка предыдущего значения previousValue и текущего,
+        # если они совпадают, произвести изменения в данных.
+        self.previousValue = minValue
+        self.setValue(minValue)
+
+    def focusOutEvent(self, e):
+        self.focusOut.emit()
+        super(MySpinBox, self).focusOutEvent(e)
+
+    def setPreviousValue(self, value):
+        self.previousValue = value
+
+    def getPreviousValue(self):
+        return self.previousValue
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         # инициализация окна
         super(MainWindow, self).__init__()
         self.setupUi(self)
+
+        # меняем виджеты счётчика, чтобы была возможность
+        # обрабатывать сигналы переключения фокуса
+        myRowCountSpinBox = MySpinBox(0)
+        myColumnCountSpinBox = MySpinBox(MIN_COLS)
+        self.horizontalLayout.replaceWidget(self.countOfRowsSpinBox, myRowCountSpinBox)
+        self.horizontalLayout.replaceWidget(self.countOfColsSpinBox, myColumnCountSpinBox)
+        self.countOfRowsSpinBox.deleteLater()
+        self.countOfColsSpinBox.deleteLater()
+        self.countOfRowsSpinBox = myRowCountSpinBox
+        self.countOfColsSpinBox = myColumnCountSpinBox
+        # подписываемся на сигналы
+        self.countOfRowsSpinBox.focusOut.connect(self.rowsSpinBoxFocusOut)
+        self.countOfColsSpinBox.focusOut.connect(self.columnsSpinBoxFocusOut)
+        self.countOfRowsSpinBox.valueChanged.connect(self.rowCountChanged)
+        self.countOfColsSpinBox.valueChanged.connect(self.columnCountChanged)
 
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
@@ -79,14 +127,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         headerLabels[COL_CALCULATED] = 'Вычисл.'
         self.tableWidget.setHorizontalHeaderLabels(headerLabels)
 
-        # инициализация значений и ограничений в счётчиках кол-ва столбцов и строк
-        self.countOfRowsSpinBox.setValue(rowCount)
-        self.countOfColsSpinBox.setValue(colCount)
-        self.countOfRowsSpinBox.setMinimum(rowCount)
-        self.countOfColsSpinBox.setMinimum(colCount)
-
         # добавление строки, чтобы сразу было видно, что да как примерно
         self.addRow()
+        # изменяем значение в счётчике строк
+        self.countOfRowsSpinBox.setValue(1)
 
     # добавить строку в талицу и numpy массив
     def addRow(self):
@@ -128,9 +172,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.array = self.array[:-countToDelete, :]
         for i in range(countToDelete):
             self.tableWidget.removeRow(self.tableWidget.rowCount()-1)
+        self.setSumCol()
 
     # удаление столбца в numpy массиве и Qt таблице
-    def deleteColumn(self, countToDelete=3):
+    def deleteColumns(self, countToDelete=3):
         # проверка, чтобы не удалить нужные колонки
         colCount = self.tableWidget.columnCount()
         # эта проверка на случай, чтобы не удалить необходимые колонки
@@ -161,8 +206,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if col == COL_COLOR_BACK:
                 self.setBackgroundColor(row, col)
             col += 1
-        # изменяем значение в счётчике строк
-        self.countOfRowsSpinBox.setValue(row+1)
 
         # установка значения суммы колонки
         self.setSumCol()
@@ -176,6 +219,46 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             cellinfo = QtWidgets.QTableWidgetItem(str(el))
             self.tableWidget.setItem(row, col, cellinfo)
             row += 1
+
+    # слот для обработки изменений в счётчике строк
+    # value - значение, на которое оно поменялось
+    def rowCountChanged(self, value):
+        previousValue = self.countOfRowsSpinBox.getPreviousValue()
+        self.countOfRowsSpinBox.setPreviousValue(value)
+        # если нажать Enter, предыдущее значение и текущее совпадают
+        if value == previousValue or abs(previousValue-value) == 1:
+            rowCount = self.tableWidget.rowCount()
+            if value > rowCount:
+                # добавляем данные
+                countOfAddedRows = value - self.tableWidget.rowCount()
+                for i in range(countOfAddedRows):
+                    self.addRow()
+            elif value < rowCount:
+                # удаляем данные
+                countOfDeletedRows = abs(value - self.tableWidget.rowCount())
+                self.deleteRows(countOfDeletedRows)
+
+    def columnCountChanged(self, value):
+        previousValue = self.countOfColsSpinBox.getPreviousValue()
+        self.countOfColsSpinBox.setPreviousValue(value)
+        # если нажать Enter, предыдущее значение и текущее совпадают
+        if value == previousValue or abs(previousValue-value) == 1:
+            colCount = self.tableWidget.columnCount()
+            if value > colCount:
+                # добавляем данные
+                countOfAddedCols = value - colCount
+                for i in range(countOfAddedCols):
+                    self.addColumn()
+            elif value < colCount:
+                # удаляем данные
+                countOfDeletedCols = abs(value - colCount)
+                self.deleteColumns(countOfDeletedCols)
+
+    def rowsSpinBoxFocusOut(self):
+        self.countOfRowsSpinBox.setValue(self.tableWidget.rowCount())
+
+    def columnsSpinBoxFocusOut(self):
+        self.countOfColsSpinBox.setValue(self.tableWidget.columnCount())
 
     # получить случайное значение для numpy массива
     def getRandValue(self):
