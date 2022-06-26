@@ -133,6 +133,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # изменяем значение в счётчике строк
         self.countOfRowsSpinBox.setValue(row+1)
 
+        # установка значения суммы колонки
+        self.setSumCol()
+
     # получить случайное значение для numpy массива
     def getRandValue(self):
         maxVal = numpy.iinfo(self.array.dtype).max
@@ -158,6 +161,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tableWidget.item(row, col).setBackground(QtGui.QColor(217, 125, 129))
         elif value > 0:
             self.tableWidget.item(row, col).setBackground(QtGui.QColor(91, 214, 118))
+
+    def setSumCol(self):
+        sum = numpy.sum(self.array[:, NP_COL_SUM])
+        cellinfo = QtWidgets.QTableWidgetItem(str(sum))
+        self.tableWidget.setItem(0, COL_SUM_RES, cellinfo)
 
 
 def main():
