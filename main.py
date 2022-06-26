@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # начальная инициализация таблицы
     def initTable(self):
-        colCount = 4
+        colCount = MIN_COLS
         rowCount = 0
         self.tableWidget.setColumnCount(colCount)
         self.tableWidget.setRowCount(rowCount)
@@ -122,6 +122,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # вставляем столбец в массив и талбицу Qt
         self.array = numpy.hstack((self.array, addValuesNPArray))
         self.insertIntoTableColumn(addValues)
+
+    # удаление строки в numpy массиве и Qt таблице
+    def deleteRows(self, countToDelete=1):
+        self.array = self.array[:-countToDelete, :]
+        for i in range(countToDelete):
+            self.tableWidget.removeRow(self.tableWidget.rowCount()-1)
+
+    # удаление столбца в numpy массиве и Qt таблице
+    def deleteColumn(self, countToDelete=3):
+        # проверка, чтобы не удалить нужные колонки
+        colCount = self.tableWidget.columnCount()
+        # эта проверка на случай, чтобы не удалить необходимые колонки
+        if colCount - countToDelete < MIN_COLS:
+            countToDelete = colCount - MIN_COLS
+        if countToDelete == 0:
+            return
+
+        self.array = self.array[:, :-countToDelete]
+        for i in range(countToDelete):
+            self.tableWidget.removeColumn(self.tableWidget.columnCount()-1)
 
     # выводим значения в таблицу Qt
     def insertIntoTableRow(self, values):
