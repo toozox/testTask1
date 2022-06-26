@@ -112,6 +112,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.array = numpy.vstack((self.array, addValuesNPArray))
         self.insertIntoTableRow(addValues)
 
+    # добавить столбец в талицу и numpy массив
+    def addColumn(self):
+        rowCount = self.tableWidget.rowCount()
+        # генерация случайных значений для добавления
+        addValues = [self.getRandValue() for i in range(rowCount)]
+        # сразу получаем перевёрнутый массив для вставки в numpy массив
+        addValuesNPArray = numpy.array(addValues, dtype=self.array.dtype)[..., None]
+        # вставляем столбец в массив и талбицу Qt
+        self.array = numpy.hstack((self.array, addValuesNPArray))
+        self.insertIntoTableColumn(addValues)
+
     # выводим значения в таблицу Qt
     def insertIntoTableRow(self, values):
         row = self.tableWidget.rowCount()
@@ -135,6 +146,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # установка значения суммы колонки
         self.setSumCol()
+
+    # выводим значения в Qt таблицу
+    def insertIntoTableColumn(self, values):
+        col = self.tableWidget.columnCount()
+        self.tableWidget.insertColumn(col)
+        row = 0
+        for el in values:
+            cellinfo = QtWidgets.QTableWidgetItem(str(el))
+            self.tableWidget.setItem(row, col, cellinfo)
+            row += 1
 
     # получить случайное значение для numpy массива
     def getRandValue(self):
