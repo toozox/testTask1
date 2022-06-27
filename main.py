@@ -1,7 +1,7 @@
 from sys import exit
 
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import pyqtSignal, Qt
 import numpy
 import h5py
 
@@ -90,6 +90,12 @@ class MySpinBox(QtWidgets.QSpinBox):
         return self.previousValue
 
 
+# класс, чтобы сделать столбец с результатами вычислений нередактируемой
+class ReadOnlyDelegate(QtWidgets.QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        return
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         # инициализация окна
@@ -144,6 +150,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.addRow()
         # изменяем значение в счётчике строк
         self.countOfRowsSpinBox.setValue(1)
+
+        # сделать столбец с суммой и столбец с результатами вычислений нередактируемыми
+        delegate = ReadOnlyDelegate()
+        self.tableWidget.setItemDelegateForColumn(COL_CALCULATED, delegate)
+        self.tableWidget.setItemDelegateForColumn(COL_SUM_RES, delegate)
 
     # добавить строку в талицу и numpy массив
     def addRow(self):
