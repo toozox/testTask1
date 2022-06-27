@@ -3,6 +3,7 @@ from sys import exit
 from PyQt5 import QtWidgets, QtGui
 from PyQt5.QtCore import pyqtSignal
 import numpy
+import h5py
 
 from mainWindowUi import Ui_MainWindow
 
@@ -31,6 +32,10 @@ MIN_COMBO_BOX_VALUE = 1
 MAX_COMBO_BOX_VALUE = 5  # включительно
 
 MIN_COLS = 4  # минимальное количество столбцов, которые могут быть
+
+H5_FILES = "h5 files (*.h5)"
+TEXT_FILES = "Text files(*.txt)"
+ALLOWED_FILE_FORMATS = [TEXT_FILES, H5_FILES]
 
 
 # Свой класс выпадающего списка, чтобы была возможность отправлять данные, необходимые
@@ -106,6 +111,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.countOfColsSpinBox.focusOut.connect(self.columnsSpinBoxFocusOut)
         self.countOfRowsSpinBox.valueChanged.connect(self.rowCountChanged)
         self.countOfColsSpinBox.valueChanged.connect(self.columnCountChanged)
+
+        self.saveButton.clicked.connect(self.saveFile)
 
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
@@ -290,6 +297,29 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         sum = numpy.sum(self.array[:, NP_COL_SUM])
         cellinfo = QtWidgets.QTableWidgetItem(str(sum))
         self.tableWidget.setItem(0, COL_SUM_RES, cellinfo)
+
+    def saveFile(self):
+        fname = QtWidgets.QFileDialog.getSaveFileName(self, "Открыть файл", "", ";;".join(ALLOWED_FILE_FORMATS))
+        # если нажали "Отмена"
+        if fname[0] == '':
+            return
+        if fname[1] == H5_FILES:
+            self.saveToH5File(fname[0])
+        elif fname[1] == TEXT_FILES:
+            self.saveToTextFile(fname[0])
+
+    def saveToH5File(self, fname):
+        # дописываем формат файла, если пользователь их не ввёл
+        if fname[-3:] != '.h5':
+            fname = fname + '.h5'
+        with h5py.File(fname, 'w') as hf:
+            hf.create_dataset('array', data=self.array)
+
+    def saveToTextFile(self, fname):
+        # дописываем формат файла, если пользователь их не ввёл
+        if fname[-4:] != '.txt':
+            fname = fname + '.txt'
+        numpy.savetxt(fname, self.array)
 
 
 def main():
