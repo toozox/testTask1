@@ -1,7 +1,7 @@
 from sys import exit
 
 from PyQt5 import QtWidgets, QtGui
-from PyQt5.QtCore import pyqtSignal, Qt
+from PyQt5.QtCore import pyqtSignal, QRegExp, Qt
 import numpy
 import h5py
 
@@ -96,6 +96,21 @@ class ReadOnlyDelegate(QtWidgets.QStyledItemDelegate):
         return
 
 
+# проверка вводимых значений в пределах допустимого
+class NumericDelegate(QtWidgets.QStyledItemDelegate):
+    def __init__(self, minValue, maxValue):
+        super(NumericDelegate, self).__init__()
+        self.minValue = minValue
+        self.maxValue = maxValue
+
+    def createEditor(self, parent, option, index):
+        editor = super(NumericDelegate, self).createEditor(parent, option, index)
+        if isinstance(editor, QtWidgets.QLineEdit):
+            validator = QtGui.QIntValidator(self.minValue, self.maxValue, editor)
+            editor.setValidator(validator)
+        return editor
+
+
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     # сигнал на изменение суммы
     sumChanged = pyqtSignal(int)  # (sum)
@@ -158,6 +173,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         delegate = ReadOnlyDelegate()
         self.tableWidget.setItemDelegateForColumn(COL_CALCULATED, delegate)
         self.tableWidget.setItemDelegateForColumn(COL_SUM_RES, delegate)
+
+        # добавляем ограничения, чтобы пользователь мог вводить только допустимые значения
+        numericDelegate = NumericDelegate(self.getMinValue(), self.getMaxValue())
+        self.tableWidget.setItemDelegate(numericDelegate)
 
     # добавить строку в талицу и numpy массив
     def addRow(self):
@@ -289,9 +308,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # получить случайное значение для numpy массива
     def getRandValue(self):
-        maxVal = numpy.iinfo(self.array.dtype).max
-        minVal = numpy.iinfo(self.array.dtype).min
-        return numpy.random.randint(minVal, maxVal, dtype=self.array.dtype)
+        return numpy.random.randint(self.getMinValue(), self.getMaxValue(), dtype=self.array.dtype)
+
+    # минимальное значение, которое можно записать в данные
+    def getMinValue(self):
+        return numpy.iinfo(self.array.dtype).min
+
+    # максимальное значение, которое можно записать в данные
+    def getMaxValue(self):
+        return numpy.iinfo(self.array.dtype).max
 
     @staticmethod
     def getCalculatedValue(inputValue):
