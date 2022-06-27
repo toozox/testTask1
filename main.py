@@ -113,6 +113,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.countOfColsSpinBox.valueChanged.connect(self.columnCountChanged)
 
         self.saveButton.clicked.connect(self.saveFile)
+        self.openButton.clicked.connect(self.openFile)
+        self.saveAction.triggered.connect(self.saveFile)
+        self.openAction.triggered.connect(self.openFile)
 
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
@@ -293,13 +296,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         elif value > 0:
             self.tableWidget.item(row, col).setBackground(QtGui.QColor(91, 214, 118))
 
+    # вызывается каждый раз, когда добавляется строка
+    # сумма не хранится в numpy массиве
     def setSumCol(self):
         sum = numpy.sum(self.array[:, NP_COL_SUM])
         cellinfo = QtWidgets.QTableWidgetItem(str(sum))
         self.tableWidget.setItem(0, COL_SUM_RES, cellinfo)
 
     def saveFile(self):
-        fname = QtWidgets.QFileDialog.getSaveFileName(self, "Открыть файл", "", ";;".join(ALLOWED_FILE_FORMATS))
+        fname = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить файл", "", ";;".join(ALLOWED_FILE_FORMATS))
         # если нажали "Отмена"
         if fname[0] == '':
             return
@@ -320,6 +325,32 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if fname[-4:] != '.txt':
             fname = fname + '.txt'
         numpy.savetxt(fname, self.array)
+
+    def openFile(self):
+        fname = QtWidgets.QFileDialog.getOpenFileName(self, "Открыть файл", "", ";;".join(ALLOWED_FILE_FORMATS))
+        if fname[1] == H5_FILES:
+            self.openH5File(fname[0])
+        elif fname[1] == TEXT_FILES:
+            self.openTextFile(fname[0])
+
+    def openH5File(self, fname):
+        with h5py.File(fname, 'r') as hf:
+            self.array = hf['array'][:]
+        self.loadArrayToTable()
+
+    def openTextFile(self, fname):
+        self.array = numpy.loadtxt(fname, dtype=self.array.dtype)
+        self.loadArrayToTable()
+
+    def loadArrayToTable(self):
+        rowCount = len(self.array[:, 0])
+        colCount = len(self.array[0, :]) + 1  # +1 потому что в numpy массиве нет столбца суммы
+        self.tableWidget.setRowCount(0)
+        self.tableWidget.setColumnCount(colCount)
+        for row in self.array:
+            self.insertIntoTableRow(row)
+        self.countOfRowsSpinBox.setValue(rowCount)
+        self.countOfColsSpinBox.setValue(colCount)
 
 
 def main():

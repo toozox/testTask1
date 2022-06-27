@@ -81,9 +81,9 @@
        </spacer>
       </item>
       <item>
-       <widget class="QPushButton" name="loadButton">
+       <widget class="QPushButton" name="openButton">
         <property name="text">
-         <string>Загрузить</string>
+         <string>Открыть</string>
         </property>
        </widget>
       </item>
@@ -112,7 +112,7 @@
      <string>Меню</string>
     </property>
     <addaction name="saveAction"/>
-    <addaction name="loadAction"/>
+    <addaction name="openAction"/>
     <addaction name="closeAction"/>
    </widget>
    <addaction name="menu"/>
@@ -123,9 +123,9 @@
     <string>Сохранить</string>
    </property>
   </action>
-  <action name="loadAction">
+  <action name="openAction">
    <property name="text">
-    <string>Загрузить</string>
+    <string>Открыть</string>
    </property>
   </action>
   <action name="closeAction">
