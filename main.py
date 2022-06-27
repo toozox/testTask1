@@ -97,6 +97,9 @@ class ReadOnlyDelegate(QtWidgets.QStyledItemDelegate):
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
+    # сигнал на изменение суммы
+    sumChanged = pyqtSignal(int)  # (sum)
+
     def __init__(self):
         # инициализация окна
         super(MainWindow, self).__init__()
@@ -316,6 +319,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         sum = numpy.sum(self.array[:, NP_COL_SUM])
         cellinfo = QtWidgets.QTableWidgetItem(str(sum))
         self.tableWidget.setItem(0, COL_SUM_RES, cellinfo)
+        self.sumChanged.emit(sum)
 
     def saveFile(self):
         fname = QtWidgets.QFileDialog.getSaveFileName(self, "Сохранить файл", "", ";;".join(ALLOWED_FILE_FORMATS))
