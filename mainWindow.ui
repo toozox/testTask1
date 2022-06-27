@@ -56,7 +56,7 @@
      </layout>
     </item>
     <item>
-     <widget class="PlotWidget" name="widget" native="true"/>
+     <widget class="PlotWidget" name="plotWidget" native="true"/>
     </item>
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_2">

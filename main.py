@@ -117,9 +117,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.saveAction.triggered.connect(self.saveFile)
         self.openAction.triggered.connect(self.openFile)
 
+        # обработка сигналов на выделение столбцов
+        self.tableWidget.selectionModel().selectionChanged.connect(self.drawGraph)
+
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
-        self.array = numpy.empty((0, MIN_COLS-1), dtype='int16')
+        self.array = numpy.empty((0, MIN_COLS-1), dtype='uint8')
         self.initTable()
 
     # начальная инициализация таблицы
@@ -351,6 +354,20 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.insertIntoTableRow(row)
         self.countOfRowsSpinBox.setValue(rowCount)
         self.countOfColsSpinBox.setValue(colCount)
+
+    def drawGraph(self):
+        indexes = self.tableWidget.selectionModel().selectedColumns()
+        selectedColumns = [i.column() for i in indexes]
+        # по условию задания, нужно выделить два столбца и по ним нарисовать график
+        # сделал ограничение, чтобы не было возможности рисовать на основе столбца суммы
+        if len(selectedColumns) != 2 or 0 in selectedColumns:
+            return
+        self.plotWidget.clear()
+        # получаем массив данных, на основе которых нужно рисовать график,
+        plotData = numpy.array([self.array[:, selectedColumns[0]-1], self.array[:, selectedColumns[1]-1]])
+        # сортируем эти данные, чтобы график получился более менее приличным
+        plotData = plotData[:, plotData[0, :].argsort()]
+        self.plotWidget.plot(plotData[0, :], plotData[1, :])
 
 
 def main():
