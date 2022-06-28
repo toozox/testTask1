@@ -356,11 +356,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.array[row, column-1] = value
 
     def setBackgroundColor(self, row, col):
+        self.tableWidget.blockSignals(True)
         value = int(self.tableWidget.item(row, col).text())
         if value < 0:
             self.tableWidget.item(row, col).setBackground(QtGui.QColor(217, 125, 129))
         elif value > 0:
             self.tableWidget.item(row, col).setBackground(QtGui.QColor(91, 214, 118))
+        else:
+            self.tableWidget.item(row, col).setBackground(QtGui.QColor(255, 255, 255))
+        self.tableWidget.blockSignals(False)
 
     # вызывается каждый раз, когда добавляется строка
     # сумма не хранится в numpy массиве
@@ -441,6 +445,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # отправка сигнала, что данные в столбце, откуда считается сумма изменилась
         if column == COL_SUM:
             self.colSumValueChanged.emit(row, int(value))
+        if column == COL_COLOR_BACK:
+            self.setBackgroundColor(row, column)
 
 
 def main():
