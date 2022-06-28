@@ -114,6 +114,13 @@ class NumericDelegate(QtWidgets.QStyledItemDelegate):
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     # сигнал на изменение суммы
     sumChanged = pyqtSignal(int)  # (sum)
+    # сигнал на изменение исходного значения, на основе которого считается столбец COL_CALCULATED
+    # сигнал сработает, если пользователь изменит эти данные
+    colSumValueChanged = pyqtSignal(int, int)  # (row, value)
+    # тут с int в виде передаваемых типов могут быть конечно проблема, если
+    # мы решим, что данные в массиве должны быть float, тогда данные будут не до
+    # конца корректными
+    # я думаю это можно будет избежать, если будем передавать данные в виде 1x1 numpy массива
 
     def __init__(self):
         # инициализация окна
@@ -144,6 +151,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # обработка сигналов на выделение столбцов
         self.tableWidget.selectionModel().selectionChanged.connect(self.drawGraph)
 
+        # обработка сигналов на изменение данных в таблице
         self.tableWidget.cellChanged.connect(self.dataInput)
 
         # тип данных сделал целый, в задании это чётко не обговаривалось,
@@ -430,6 +438,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             return
         value = self.tableWidget.item(row, column).text()
         self.setNPArrayValue(row, column, value)
+        # отправка сигнала, что данные в столбце, откуда считается сумма изменилась
+        if column == COL_SUM:
+            self.colSumValueChanged.emit(row, int(value))
 
 
 def main():
