@@ -116,7 +116,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     sumChanged = pyqtSignal(int)  # (sum)
     # сигнал на изменение исходного значения, на основе которого считается столбец COL_CALCULATED
     # сигнал сработает, если пользователь изменит эти данные
-    colSumValueChanged = pyqtSignal(int, int)  # (row, value)
+    calcValueChanged = pyqtSignal(int, int)  # (row, value)
     # тут с int в виде передаваемых типов могут быть конечно проблема, если
     # мы решим, что данные в массиве должны быть float, тогда данные будут не до
     # конца корректными
@@ -153,6 +153,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
         # обработка сигналов на изменение данных в таблице
         self.tableWidget.cellChanged.connect(self.dataInput)
+        self.calcValueChanged.connect(self.setCalculatedValue)
+        # если изменения касаются и суммы, то произвести перерасчёт колонки суммы
+        if COL_SUM == COL_COLOR_BACK:
+            self.calcValueChanged.connect(lambda: self.setSumCol())
 
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
@@ -443,10 +447,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         value = self.tableWidget.item(row, column).text()
         self.setNPArrayValue(row, column, value)
         # отправка сигнала, что данные в столбце, откуда считается сумма изменилась
-        if column == COL_SUM:
-            self.colSumValueChanged.emit(row, int(value))
+        if column == COL_COLOR_BACK:
+            self.calcValueChanged.emit(row, int(value))
         if column == COL_COLOR_BACK:
             self.setBackgroundColor(row, column)
+
+    # если данные в столбце, откуда берутся данные для получения данных в COL_CALCULATED
+    # вызывается эта функция
+    def setCalculatedValue(self, row, value):
+        calculatedValue = self.getCalculatedValue(value)
+        self.setNPArrayValue(row, COL_CALCULATED, calculatedValue)
+        cellinfo = QtWidgets.QTableWidgetItem(str(calculatedValue))
+        self.tableWidget.setItem(row, COL_CALCULATED, cellinfo)
 
 
 def main():
