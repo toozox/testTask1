@@ -144,9 +144,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # обработка сигналов на выделение столбцов
         self.tableWidget.selectionModel().selectionChanged.connect(self.drawGraph)
 
+        self.tableWidget.cellChanged.connect(self.dataInput)
+
         # тип данных сделал целый, в задании это чётко не обговаривалось,
         # поэтому решил тут немного самовольничать :)
-        self.array = numpy.empty((0, MIN_COLS-1), dtype='uint8')
+        self.array = numpy.empty((0, MIN_COLS-1), dtype='int8')
         self.initTable()
 
     # начальная инициализация таблицы
@@ -236,6 +238,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     # выводим значения в таблицу Qt
     def insertIntoTableRow(self, values):
+        # это нужно, чтобы сигналы изменения ячейки не отправлялись
+        # при программном изменении значения ячейки и цвета фона ячейки
+        self.tableWidget.blockSignals(True)
+
         row = self.tableWidget.rowCount()
         self.tableWidget.insertRow(row)
         self.tableWidget.scrollToBottom()
@@ -253,11 +259,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.setBackgroundColor(row, col)
             col += 1
 
+        # убираем блокировку, чтобы мы могли обрабатывать пользовательский ввод
+        self.tableWidget.blockSignals(False)
+
         # установка значения суммы колонки
         self.setSumCol()
 
     # выводим значения в Qt таблицу
     def insertIntoTableColumn(self, values):
+        # это нужно, чтобы сигналы изменения ячейки не отправлялись
+        # при программном изменении значения ячейки
+        self.tableWidget.blockSignals(True)
+
         col = self.tableWidget.columnCount()
         self.tableWidget.insertColumn(col)
         row = 0
@@ -265,6 +278,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             cellinfo = QtWidgets.QTableWidgetItem(str(el))
             self.tableWidget.setItem(row, col, cellinfo)
             row += 1
+
+        # убираем блокировку, чтобы мы могли обрабатывать пользовательский ввод
+        self.tableWidget.blockSignals(False)
 
     # слот для обработки изменений в счётчике строк
     # value - значение, на которое оно поменялось
@@ -408,6 +424,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # сортируем эти данные, чтобы график получился более менее приличным
         plotData = plotData[:, plotData[0, :].argsort()]
         self.plotWidget.plot(plotData[0, :], plotData[1, :])
+
+    def dataInput(self, row, column):
+        if column == COL_SUM_RES or column == COL_CALCULATED:
+            return
+        value = self.tableWidget.item(row, column).text()
+        self.setNPArrayValue(row, column, value)
 
 
 def main():
