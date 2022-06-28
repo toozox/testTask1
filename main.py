@@ -147,6 +147,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.openButton.clicked.connect(self.openFile)
         self.saveAction.triggered.connect(self.saveFile)
         self.openAction.triggered.connect(self.openFile)
+        self.closeButton.clicked.connect(self.close)
+        self.closeAction.triggered.connect(self.close)
 
         # обработка сигналов на выделение столбцов
         self.tableWidget.selectionModel().selectionChanged.connect(self.drawGraph)
